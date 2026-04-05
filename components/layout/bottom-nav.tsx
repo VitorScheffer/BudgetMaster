@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Wallet, ArrowLeftRight, Tag, List, Settings } from 'lucide-react'
+import { LayoutDashboard, Wallet, ArrowLeftRight, Tag, List } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -11,7 +11,6 @@ const NAV_ITEMS = [
   { href: '/accounts', label: 'Accounts', icon: Wallet },
   { href: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
   { href: '/categories', label: 'Categories', icon: Tag },
-  { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export function BottomNav() {

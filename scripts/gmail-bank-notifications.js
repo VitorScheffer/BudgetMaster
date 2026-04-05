@@ -19,9 +19,15 @@ var CONFIG = {
   // Bearer token from BudgetMaster → Settings → Email Webhook
   BEARER_TOKEN: 'paste-your-token-here',
 
-  // The exact "From" address your bank uses for notification emails
-  // e.g. 'alerts@mybank.com'
-  BANK_SENDER: 'alerts@yourbank.com',
+  // The address that forwards the bank emails to this inbox.
+  // Since you forward bank alerts to yourself, set this to your own Gmail address.
+  // e.g. 'me@gmail.com'
+  BANK_SENDER: 'your-gmail@gmail.com',
+
+  // (Optional) Subject keyword to narrow the search — leave empty ('') to skip.
+  // Gmail will match emails whose subject contains this string.
+  // e.g. 'Transaction Alert'
+  SUBJECT_FILTER: 'Transaction Alert',
 
   // Gmail label applied to processed emails to avoid reprocessing
   PROCESSED_LABEL: 'BudgetMaster/Processed',
@@ -36,8 +42,11 @@ var CONFIG = {
 function processNewBankEmails() {
   var label = getOrCreateLabel(CONFIG.PROCESSED_LABEL);
 
-  // Search for unread emails from the bank sender that haven't been processed yet
+  // Search for unread forwarded bank emails that haven't been processed yet
   var query = 'from:' + CONFIG.BANK_SENDER + ' is:unread -label:' + CONFIG.PROCESSED_LABEL;
+  if (CONFIG.SUBJECT_FILTER) {
+    query += ' subject:' + CONFIG.SUBJECT_FILTER;
+  }
   var threads = GmailApp.search(query, 0, 50);
 
   for (var i = 0; i < threads.length; i++) {
