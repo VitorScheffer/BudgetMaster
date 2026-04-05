@@ -10,6 +10,16 @@ function createAdminClient() {
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    return await handleWebhook(req)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[webhook/email] Unhandled error:', message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+async function handleWebhook(req: NextRequest): Promise<NextResponse> {
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null
   if (!token) {
@@ -18,13 +28,13 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient()
 
-  const { data: tokenRow } = await supabase
+  const { data: tokenRow, error: tokenError } = await supabase
     .from('webhook_tokens')
     .select('user_id')
     .eq('token', token)
     .single()
 
-  if (!tokenRow) {
+  if (tokenError || !tokenRow) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
   }
 
@@ -64,14 +74,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'date must be in YYYY-MM-DD format' }, { status: 400 })
   }
 
-  const { data: account } = await supabase
+  const { data: account, error: accountError } = await supabase
     .from('accounts')
     .select('id')
     .eq('user_id', userId)
     .eq('card_last_four', card_last_four)
     .single()
 
-  if (!account) {
+  if (accountError || !account) {
     return NextResponse.json(
       { error: `No account with card last four '${card_last_four}' found` },
       { status: 404 }
@@ -87,7 +97,8 @@ export async function POST(req: NextRequest) {
     if (!rules) return null
     const upper = desc.toUpperCase()
     for (const rule of rules) {
-      if (upper.includes((rule.keyword as string).toUpperCase())) return rule.category_id as string
+      const keyword = rule.keyword as string | null
+      if (keyword && upper.includes(keyword.toUpperCase())) return rule.category_id as string
     }
     return null
   }
