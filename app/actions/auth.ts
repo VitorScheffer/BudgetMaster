@@ -18,7 +18,11 @@ export async function signIn(formData: FormData) {
   redirect('/dashboard')
 }
 
-export async function signUp(formData: FormData) {
+export async function signUp(_formData: FormData) {
+  return { error: 'Registration is currently disabled.' }
+}
+
+async function _signUp(formData: FormData) {
   const supabase = await createClient()
 
   const headersList = await headers()

@@ -1,8 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import Link from 'next/link'
-import RegisterForm from './register-form'
+import { redirect } from 'next/navigation'
 
 export default function RegisterPage() {
+  redirect('/login')
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4"
