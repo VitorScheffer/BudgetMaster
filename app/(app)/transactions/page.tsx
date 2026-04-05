@@ -41,16 +41,39 @@ export default async function TransactionsPage({
     .order('created_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)
 
-  if (params.account) query = query.eq('account_id', params.account)
-  if (params.category) query = query.eq('category_id', params.category)
-  if (params.from) query = query.gte('date', params.from)
-  if (params.to) query = query.lte('date', params.to)
-  if (params.search) query = query.ilike('description', `%${params.search}%`)
-  if (params.type === 'income') query = query.gt('amount', 0)
-  if (params.type === 'expense') query = query.lt('amount', 0)
-  if (params.type === 'transfer') query = query.eq('is_transfer', true)
+  // Totals query (same filters, amounts only — no pagination)
+  let totalsQuery = supabase.from('transactions').select('amount')
 
-  const { data: transactions, count } = await query
+  // Apply shared filters
+  function applyFilters<T extends ReturnType<typeof supabase.from>>(q: T): T {
+    if (params.account) q = q.eq('account_id', params.account) as T
+    if (params.category === 'uncategorized') q = q.is('category_id', null) as T
+    else if (params.category) q = q.eq('category_id', params.category) as T
+    if (params.from) q = q.gte('date', params.from) as T
+    if (params.to) q = q.lte('date', params.to) as T
+    if (params.search) q = q.ilike('description', `%${params.search}%`) as T
+    if (params.type === 'income') q = q.gt('amount', 0) as T
+    if (params.type === 'expense') q = q.lt('amount', 0) as T
+    if (params.type === 'transfer') q = q.eq('is_transfer', true) as T
+    return q
+  }
+
+  query = applyFilters(query)
+  totalsQuery = applyFilters(totalsQuery)
+
+  // Exclude transfers from income/expense totals unless the user is explicitly
+  // filtering by type=transfer (transfers are not real income or expenses)
+  if (params.type !== 'transfer') {
+    totalsQuery = totalsQuery.eq('is_transfer', false) as typeof totalsQuery
+  }
+
+  const [{ data: transactions, count }, { data: amountData }] = await Promise.all([
+    query,
+    totalsQuery,
+  ])
+
+  const incomeTotal = amountData?.reduce((a, r) => (r.amount > 0 ? a + r.amount : a), 0) ?? 0
+  const expenseTotal = amountData?.reduce((a, r) => (r.amount < 0 ? a + r.amount : a), 0) ?? 0
 
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
 
@@ -68,6 +91,8 @@ export default async function TransactionsPage({
         page={page}
         totalPages={totalPages}
         total={count ?? 0}
+        incomeTotal={incomeTotal}
+        expenseTotal={expenseTotal}
       />
     </div>
   )
