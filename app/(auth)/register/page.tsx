@@ -1,4 +1,7 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import RegisterForm from './register-form'
 
 export default function RegisterPage() {
   redirect('/login')
